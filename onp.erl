@@ -29,8 +29,27 @@ onpStack([Elem | T], [X, Y | Z]) when Elem == "*" ->
 onpStack([Elem | T], [X, Y | Z]) when Elem == "/" ->
   onpStack(T, [Y / X | Z]);
 
+onpStack([Elem | T], [X | Z]) when Elem == "sqrt" ->
+  onpStack(T, [math:sqrt(X) | Z]);
+
+onpStack([Elem | T], [X, Y | Z]) when Elem == "pow" ->
+  onpStack(T, [math:pow(Y, X) | Z]);
+
+onpStack([Elem | T], [X | Z]) when Elem == "sin" ->
+  onpStack(T, [math:sin(X) | Z]);
+
+onpStack([Elem | T], [X | Z]) when Elem == "cos" ->
+  onpStack(T, [math:cos(X) | Z]);
+
+onpStack([Elem | T], [X | Z]) when Elem == "tan" ->
+  onpStack(T, [math:tan(X) | Z]);
+
+
 onpStack([Elem | T], Stack) ->
-  onpStack(T, [list_to_integer(Elem) | Stack]);
+    case lists:member($., Elem)  of
+      true -> onpStack(T, [list_to_float(Elem) | Stack]);
+      false -> onpStack(T, [list_to_integer(Elem) | Stack])
+    end;
 
 onpStack([], Stack) ->
   hd(Stack).
