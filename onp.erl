@@ -18,7 +18,7 @@
 -export([onp/1]).
 
 onpStack([Elem | T], [X, Y | Z]) when Elem == "+" ->
-  onpStack(T, [Y + X | Z]);
+onpStack(T, [Y + X | Z]);
 
 onpStack([Elem | T], [X, Y | Z]) when Elem == "-" ->
   onpStack(T, [Y - X | Z]);
@@ -54,6 +54,6 @@ onpStack([Elem | T], Stack) ->
 onpStack([], Stack) ->
   hd(Stack).
 
-onp(List) ->
-  onpStack(string:tokens(List, " "), []).
+onp(String) ->
+  onpStack(string:tokens(String, " "), []).
 
