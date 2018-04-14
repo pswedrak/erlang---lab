@@ -72,18 +72,25 @@ addValue(Name, {Date, Time}, Type, Value, Monitor) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+getMeasurement(_, _, []) -> throw("No such measurement");
+getMeasurement({Date, Time}, Type, [H | T])
+  -> case H of
+       #measurement{date = Date, time = Time, type = Type} -> H;
+       _ -> getMeasurement({Date, Time}, Type, T)
+      end.
+
 removeValue({X, Y}, {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
     false -> throw("Station does not exist");
     true -> Monitor#{getStation({coordinates, X, Y}, maps:keys(Monitor)) := maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor) --
-            [#measurement{date = Date, time = Time, type = Type}]}
+            [getMeasurement({Date, Time}, Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor))]}
   end;
 
 removeValue(Name,  {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x, y}) of
     false -> throw("Station does not exist");
-    true -> Monitor#{getStation(name = Name, maps:keys(Monitor)) := maps:get(getStation(Name, maps:keys(Monitor)), Monitor) --
-    [#measurement{date = Date, time = Time, type = Type}]}
+    true -> Monitor#{getStation(Name, maps:keys(Monitor)) := maps:get(getStation(Name, maps:keys(Monitor)), Monitor) --
+         [getMeasurement({Date, Time}, Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor))]}
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
