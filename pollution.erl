@@ -132,20 +132,20 @@ getStationSumAndAmount(Type, [_ | T], {Acc, N}) -> getStationSumAndAmount(Type, 
 getStationMean({X, Y}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
     false -> throw(station_does_not_exist);
-    true -> case element(2, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0})) of
+    true -> {Sum, N} = getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0}),
+      case N of
               0 -> throw(no_measurement);
-              _ -> element(1, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0}))
-                    / element(2, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0}))
+              _ -> Sum / N
             end
   end;
 
 getStationMean(Name, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x, y}) of
     false -> throw(station_does_not_exist);
-    true -> case element(2, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0})) of
+    true -> {Sum, N} = getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0}),
+            case N of
               0 -> throw(no_measurement);
-              _ -> element(1, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0}))
-                / element(2, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0}))
+              _ -> Sum / N
             end
   end.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,8 +163,8 @@ getDailyMonitorSumAndAmount(Type, Date, [Station | T], {Acc, N}, Monitor)
 getDailyMean(Type, Date, Monitor) ->
   case element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor )) of
     0 -> throw(no_measurement);
-    _ -> element(1, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor ))
-          /  element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor))
+    _ -> {Sum, N} = getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor ),
+         Sum / N
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,16 +189,14 @@ filterType(Type, List) -> lists:filter(fun (X) -> X#measurement.type == Type end
 getMovingSumAndAmount([], {Sum, N, _}) -> {Sum, N};
 getMovingSumAndAmount([H | T], {Sum, N, Weight}) -> getMovingSumAndAmount(T, {Sum + Weight * H#measurement.value, N + Weight, Weight + 1}).
 
-
 getPredictedIndex({X, Y}, {Date, Time}, Type, Monitor)
   -> case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
        false -> throw(station_does_not_exist);
-       true -> case element(2, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1})) of
+       true -> {Sum, N} = getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1}),
+         case N of
                  0 -> throw(no_measurement);
-                 _ -> element(1, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1}))
-                      / element(2, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1}))
+                 _ -> Sum / N
                end
 end.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
