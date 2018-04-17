@@ -34,12 +34,10 @@ keysContainStation([#station{coordinates = #coordinates{longitude = X, latitude 
 keysContainStation([_ | T], Name, {X, Y})
   -> keysContainStation(T, Name,{X, Y}).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 addStation(Name, {X, Y}, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {X, Y}) of
     false -> Monitor#{#station{name = Name, coordinates = #coordinates{longitude = X, latitude = Y}} => []};
-    true -> throw("Station already exists")
+    true -> throw(station_already_exists)
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,34 +57,34 @@ getStation(Name, [H | T])
        _ -> getStation(Name, T)
      end.
 
-checkIfAlreadyExists({Date, Time}, Type, []) -> false;
+checkIfAlreadyExists(_, _, []) -> false;
 checkIfAlreadyExists({Date, Time}, Type, [#measurement{date = Date, time = Time, type = Type} | _]) -> true;
 checkIfAlreadyExists({Date, Time}, Type, [_ | T]) -> checkIfAlreadyExists({Date, Time}, Type, T).
 
 
 addValue({X, Y}, {Date, Time}, Type, Value, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> case checkIfAlreadyExists({Date, Time}, Type, maps:get(getStation({coordinates, X, Y},  maps:keys(Monitor)), Monitor )) of
               false -> Monitor#{getStation({coordinates, X, Y}, maps:keys(Monitor)) := maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor)
 ++ [#measurement{date = Date, time = Time, type = Type, value = Value}]};
-              true -> throw("Measurement already exists")
+              true -> throw(measurement_already_exists)
             end
   end;
 
 addValue(Name, {Date, Time}, Type, Value, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x, y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> case checkIfAlreadyExists({Date, Time}, Type, maps:get(getStation(Name,  maps:keys(Monitor)), Monitor )) of
              false ->  Monitor#{getStation(Name, maps:keys(Monitor)) := maps:get(getStation(Name, maps:keys(Monitor)), Monitor)
                 ++ [#measurement{date = Date, time = Time, type = Type, value = Value}]};
-             true -> throw("Measurement already exists")
+             true -> throw(measurement_already_exists)
             end
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-getMeasurement(_, _, []) -> throw("No such measurement");
+getMeasurement(_, _, []) -> throw(no_measurement);
 getMeasurement({Date, Time}, Type, [H | T])
   -> case H of
        #measurement{date = Date, time = Time, type = Type} -> H;
@@ -95,34 +93,34 @@ getMeasurement({Date, Time}, Type, [H | T])
 
 removeValue({X, Y}, {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> Monitor#{getStation({coordinates, X, Y}, maps:keys(Monitor)) := maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor) --
             [getMeasurement({Date, Time}, Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor))]}
   end;
 
 removeValue(Name,  {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x, y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> Monitor#{getStation(Name, maps:keys(Monitor)) := maps:get(getStation(Name, maps:keys(Monitor)), Monitor) --
          [getMeasurement({Date, Time}, Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor))]}
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-getValue({Date, Time}, Type, [])
-  -> throw("There is no such measurement");
+getValue(_, _, [])
+  -> throw(no_measurement);
 getValue({Date, Time}, Type, [#measurement{date = Date, time = Time, type = Type, value = X} | T]) -> X;
 getValue({Date, Time}, Type, [_ | T]) -> getValue({Date, Time}, Type, T).
 
 getOneValue({X, Y}, {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> getValue({Date, Time}, Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor))
   end;
 
 getOneValue(Name, {Date, Time}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x,y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> getValue({Date, Time}, Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor))
   end.
 
@@ -133,9 +131,9 @@ getStationSumAndAmount(Type, [_ | T], {Acc, N}) -> getStationSumAndAmount(Type, 
 
 getStationMean({X, Y}, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> case element(2, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0})) of
-              0 -> throw("There are no such measurements");
+              0 -> throw(no_measurement);
               _ -> element(1, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0}))
                     / element(2, getStationSumAndAmount(Type, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), {0 ,0}))
             end
@@ -143,29 +141,30 @@ getStationMean({X, Y}, Type, Monitor) ->
 
 getStationMean(Name, Type, Monitor) ->
   case keysContainStation(maps:keys(Monitor), Name, {x, y}) of
-    false -> throw("Station does not exist");
+    false -> throw(station_does_not_exist);
     true -> case element(2, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0})) of
-              0 -> throw("There are no such measurements");
+              0 -> throw(no_measurement);
               _ -> element(1, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0}))
                 / element(2, getStationSumAndAmount(Type, maps:get(getStation(Name, maps:keys(Monitor)), Monitor), {0,0}))
             end
   end.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-getDailyStationSumAndAmount(Type, Date, [], {Acc, N}) -> {Acc, N};
+getDailyStationSumAndAmount(_, _, [], {Acc, N}) -> {Acc, N};
 getDailyStationSumAndAmount(Type, Date, [#measurement{type = Type, date = Date, value = X} | T], {Acc, N}) -> getDailyStationSumAndAmount(Type, Date, T, {Acc + X, N+1});
 getDailyStationSumAndAmount(Type, Date, [_ | T], {Acc, N}) -> getDailyStationSumAndAmount(Type, Date, T, {Acc, N}).
 
-getDailyMonitorSumAndAmount(Type, Date, [], {Acc, N})
+getDailyMonitorSumAndAmount(_, _, [], {Acc, N}, _)
   -> {Acc, N};
-getDailyMonitorSumAndAmount(Type, Date, [Station | T], {Acc, N})
-  -> getDailyMonitorSumAndAmount(Type, Date, T, {Acc + element(1, getDailyStationSumAndAmount(Type, Date, Station, {0, 0})), N + 1}).
+getDailyMonitorSumAndAmount(Type, Date, [Station | T], {Acc, N}, Monitor)
+  ->  {OneStationSum, OneStationN} = getDailyStationSumAndAmount(Type, Date, maps:get(Station, Monitor), {0, 0}),
+      getDailyMonitorSumAndAmount(Type, Date, T, {Acc + OneStationSum, N + OneStationN }, Monitor).
 
 getDailyMean(Type, Date, Monitor) ->
-  case element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0} )) of
-    0 -> throw("There are no such measurements");
-    _ -> element(1, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0} ))
-          /  element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}))
+  case element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor )) of
+    0 -> throw(no_measurement);
+    _ -> element(1, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor ))
+          /  element(2, getDailyMonitorSumAndAmount(Type, Date, maps:keys(Monitor), {0,0}, Monitor))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,7 +176,6 @@ getLastDayMeasurements({Date, Time}, [H | T], Acc)
        _ -> getLastDayMeasurements({Date, Time}, T, Acc)
      end.
 
-
 lessThan(List, Arg) -> lists:filter(fun (X) -> calendar:datetime_to_gregorian_seconds( {X#measurement.date, X#measurement.time} )
                         < calendar:datetime_to_gregorian_seconds( {Arg#measurement.date, Arg#measurement.time} ) end, List).
 grtEqThan(List, Arg) -> lists:filter(fun (X) -> calendar:datetime_to_gregorian_seconds( {X#measurement.date, X#measurement.time} )
@@ -188,15 +186,15 @@ qsDate([]) -> [].
 
 filterType(Type, List) -> lists:filter(fun (X) -> X#measurement.type == Type end, List).
 
-getMovingSumAndAmount([], {Sum, N, Weight}) -> {Sum, N};
+getMovingSumAndAmount([], {Sum, N, _}) -> {Sum, N};
 getMovingSumAndAmount([H | T], {Sum, N, Weight}) -> getMovingSumAndAmount(T, {Sum + Weight * H#measurement.value, N + Weight, Weight + 1}).
 
 
 getPredictedIndex({X, Y}, {Date, Time}, Type, Monitor)
   -> case keysContainStation(maps:keys(Monitor), name, {X, Y}) of
-       false -> throw("Station does not exist");
+       false -> throw(station_does_not_exist);
        true -> case element(2, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1})) of
-                 0 -> throw("No such measurements");
+                 0 -> throw(no_measurement);
                  _ -> element(1, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1}))
                       / element(2, getMovingSumAndAmount(filterType(Type, qsDate(getLastDayMeasurements({Date, Time}, maps:get(getStation({coordinates, X, Y}, maps:keys(Monitor)), Monitor), []))), {0,0,1}))
                end
