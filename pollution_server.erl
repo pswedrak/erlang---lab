@@ -74,8 +74,7 @@ loop(Monitor) ->
       loop(Monitor);
 
     {request, Pid, stop} ->
-      Pid ! {reply, ok}
-
+      ok
   end.
 
 stop() -> pollServer ! {request, self(), stop}.
