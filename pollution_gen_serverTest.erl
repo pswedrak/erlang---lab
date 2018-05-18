@@ -4,9 +4,9 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 07. maj 2018 21:41
+%%% Created : 18. maj 2018 15:56
 %%%-------------------------------------------------------------------
--module(pollution_serverTest).
+-module(pollution_gen_serverTest).
 -author("piotr").
 -include_lib("eunit/include/eunit.hrl").
 

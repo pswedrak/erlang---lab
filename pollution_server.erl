@@ -20,6 +20,7 @@
 -export([getStationMean/2]).
 -export([getDailyMean/2]).
 -export([getPredictedIndex/3]).
+-export([crash/0]).
 
 start() ->
   register (pollServer, spawn(pollution_server, init, [])).
@@ -74,7 +75,11 @@ loop(Monitor) ->
       loop(Monitor);
 
     {request, Pid, stop} ->
-      ok
+      ok;
+
+    {request, Pid, crash} ->
+        A = 1/0,
+       loop(Monitor)
   end.
 
 stop() -> pollServer ! {request, self(), stop}.
@@ -117,3 +122,5 @@ getDailyMean(Type, Date)
 
 getPredictedIndex({X, Y}, {Date, Time}, Type)
   -> call(getPredictedIndex, {{X, Y}, {Date, Time}, Type}).
+
+crash() -> pollServer ! {request, self(), crash}.
