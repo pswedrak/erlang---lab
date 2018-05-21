@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(pollution).
 -author("piotr").
--export([createMonitor/0]).
+-export([createMonitor/0, crash/0]).
 -export([addStation/3]).
 -export([addValue/5]).
 -export([removeValue/4]).
@@ -200,3 +200,4 @@ getPredictedIndex({X, Y}, {Date, Time}, Type, Monitor)
 end.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+crash() -> 1/0.

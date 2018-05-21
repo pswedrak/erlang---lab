@@ -12,7 +12,7 @@
 
 %% API
 -export([start_link/1, init/1, handle_cast/2, handle_call/3]).
--export([start/0, stop/0]).
+-export([start/0, stop/0, crash/0]).
 -export([addStation/2, addValue/4, removeValue/3, getOneValue/3, getStationMean/2, getDailyMean/2, getPredictedIndex/3]).
 
 start() ->
@@ -24,7 +24,7 @@ init(Monitor) ->
     {ok, Monitor}.
 
 stop() ->
-    gen_server: cast(pollution_gen_server, stop).
+  gen_server: cast(pollution_gen_server, stop).
 
 handle_cast(stop, Monitor)
     -> {stop, normal, Monitor};
@@ -45,7 +45,10 @@ handle_cast( {removeValue, {{X, Y}, {Date, Time}, Type}} , Monitor)
     -> {noreply, pollution:removeValue({X, Y}, {Date, Time}, Type, Monitor)};
 
 handle_cast( {removeValue, {{X, Y}, {Date, Time}, Type}} , Monitor)
-    -> {noreply, pollution:removeValue({X, Y}, {Date, Time}, Type, Monitor)}.
+    -> {noreply, pollution:removeValue({X, Y}, {Date, Time}, Type, Monitor)};
+
+handle_cast( crash, Monitor)
+  -> {noreply, pollution:crash()}.
 
 handle_call( {getOneValue, {{X, Y}, {Date, Time}, Type}}, Pid, Monitor)
     -> {reply, pollution:getOneValue({X, Y}, {Date, Time}, Type, Monitor), Monitor};
@@ -62,7 +65,7 @@ handle_call( {getStationMean, {Name, Type}}, Pid, Monitor)
 handle_call( {getDailyMean, {Type, Date}}, Pid, Monitor)
     -> {reply, pollution:getDailyMean(Type, Date, Monitor), Monitor};
 
-handle_call( {getPredictedIndex, {{X, Y}, {Date, Time}, Type}}, Pid, Monitor)
+handle_call( {getPredictedIndex, {X, Y}, {Date, Time}, Type}, Pid, Monitor)
     -> {reply, pollution:getPredictedIndex({X, Y}, {Date, Time}, Type, Monitor), Monitor}.
 
 addStation(Name, {X, Y})
@@ -98,5 +101,6 @@ getDailyMean(Type, Date)
 getPredictedIndex({X, Y}, {Date, Time}, Type)
     -> gen_server:call(pollution_gen_server, {getPredictedIndex, {X, Y}, {Date, Time}, Type}).
 
-
+crash()
+    -> gen_server:cast(pollution_gen_server, crash).
 
