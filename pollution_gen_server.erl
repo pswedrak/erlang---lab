@@ -24,10 +24,10 @@ init(Monitor) ->
     {ok, Monitor}.
 
 stop() ->
-  gen_server: cast(pollution_gen_server, stop).
+  gen_server:stop(pollution_gen_server).
 
 handle_cast(stop, Monitor)
-    -> {stop, normal, Monitor};
+    -> {stop, kill, Monitor};
 
 handle_cast( {addStation, {Name, {X, Y}}} , Monitor)
     -> {noreply, pollution:addStation(Name, {X, Y}, Monitor)};

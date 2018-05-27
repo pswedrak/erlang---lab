@@ -43,18 +43,67 @@ defmodule PollutionData do
     Enum.map(list, fn record -> :pollution_gen_server.addValue(record[:location], record[:datetime], "PM10", record[:pollutionLevel]) end)
   end
 
+  def measureTime(n, {stations_time, records_time, m}, list) do
+    case n do
+      0 -> {stations_time / 1000000, records_time / 1000000}
+      _ ->  startServer()
+            time_s = fn -> loadStations(list) end |> :timer.tc |> elem(0)
+            time_r = fn -> loadRecords(list) end |> :timer.tc |> elem(0)
+            stopServer()
+            measureTime(n-1, {stations_time + time_s/m, records_time + time_r/m, m}, list)
+    end
+  end
+
+  def measureTime(n, {time, m}, f, 2, {x, y}, list) do
+    case n do
+      0 -> time / 1000000
+      _ ->  startServer()
+            loadStations(list)
+            loadRecords(list)
+            time1 = fn -> f.(x, y) end |> :timer.tc |> elem(0)
+            stopServer()
+            measureTime(n-1, {time + time1/m, m}, f, 2, {x, y}, list)
+    end
+    end
+
   def test(name) do
-    startServer()
 
     file = importLinesFromCSV(name)
     list = Enum.reduce(file, [], fn line, acc -> [parseLine(line) | acc] end)
 
-    stations_time = fn -> loadStations(list) end |> :timer.tc |> elem(0)
-    records_time = fn -> loadRecords(list) end |> :timer.tc |> elem(0)
-    #dailymean = fn -> :pollution_gen_server.getDailyMean({20.06, 49.986}, "PM10") end |> :timer.tc
+    mapa = list |> Enum.reduce(%{}, fn line, acc -> Map.put(acc, {line[:datetime], line[:location]}, line) end)
+    list = Map.values(mapa)
+
+    #{stations_time, records_time} = measureTime(100, {0,0,100}, list)
+
+    #stations_mean_time = measureTime(1, {0, 1}, &:pollution_gen_server.getStationMean/2, 2, {{20.06, 49.986}, "PM10"}, list )
+
+    #startServer()
+    #loadStations(list)
+    #loadRecords(list)
+    #:pollution_gen_server.getStationMean({20.06, 49.986}, "PM10")
+
+    #startServer()
+    #loadStations(list)
+    #loadRecords(list)
+    #:pollution_gen_server.getDailyMean("PM10", {2017,5,3})
+
+    #measureTime(1, {0, 1}, &:pollution_gen_server.getDailyMean/2, 2, {"PM10", {2017,5,3}}, list )
+
+    #measureTime(1, {0, 1}, &:pollution_gen_server.getDailyMean/2, 2, {"PM10", {2017,5,3}}, list )
+
+    startServer()
+    loadStations(list)
+    loadRecords(list)
+    #:pollution_gen_server.getPredictedIndex({19.773,50.057}, {{2017,5,5}, {01,0,0}}, "PM10")
+    time1 = fn -> :pollution_gen_server.getPredictedIndex({19.773,50.057}, {{2017,5,5}, {01,0,0}}, "PM10") end |> :timer.tc |> elem(0)
     stopServer()
-    {stations_time / 1000000, records_time / 1000000}
-    #dailymean
+    time1
+  end
+
+  def streamTest(name) do
+    stream = File.stream!(name)
+    Stream.map(stream, &importLinesFromCSV/1)
   end
 
 end
